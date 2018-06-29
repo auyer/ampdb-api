@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/auyer/ampdb-api/config"
+	"github.com/auyer/ampdb-api/controllers"
+	"github.com/auyer/ampdb-api/db"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/restsec/api-echo/config"
-	"github.com/restsec/api-echo/controllers"
-	"github.com/restsec/api-echo/db"
 )
 
 func main() {
@@ -24,21 +24,21 @@ func main() {
 	if config.ConfigParams.Debug != "true" {
 	}
 	// BEGIN HTTPS
-
+	db.Init()
+	defer db.Close()
 	httpsRouter := echo.New()
 
 	httpsRouter.Use(middleware.Logger())
 	httpsRouter.Use(middleware.Recover())
 
-	db.Init()
-	defer db.GetDB().Db.Close()
-	servidor := new(controllers.ServidorController) //Controller instance
+	controller := new(controllers.AmpController) //Controller instance
 
-	httpsRouter.GET("/api/servidores", servidor.GetServidores)           //Simple route
-	httpsRouter.GET("/api/servidor/:matricula", servidor.GetServidorMat) //Route with URL parameter
-	httpsRouter.POST("/api/servidor/", servidor.PostServidor)
+	httpsRouter.GET("/api/amp/", controller.GetAMPs)       //Simple route
+	httpsRouter.GET("/api/amp/:id", controller.GetAmpByID) //Route with URL parameter
+	// httpsRouter.GET("/api/amp/do/", controller.GetAMPFile) //Route with URL parameter
 
-	err = httpsRouter.StartTLS(":"+config.ConfigParams.HttpsPort, config.ConfigParams.TLSCertLocation, config.ConfigParams.TLSKeyLocation) // listen and serve on 0.0.0.0:8080
+	err = httpsRouter.Start(":" + config.ConfigParams.HttpPort) // (":"+config.ConfigParams.HttpsPort, config.ConfigParams.TLSCertLocation, config.ConfigParams.TLSKeyLocation) // listen and serve on 0.0.0.0:8080
+	// err = httpsRouter.StartTLS(":"+config.ConfigParams.HttpsPort, config.ConfigParams.TLSCertLocation, config.ConfigParams.TLSKeyLocation) // listen and serve on 0.0.0.0:8080
 	if err != nil {
 		fmt.Println(err.Error())
 		log.Fatal(err)
