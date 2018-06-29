@@ -1,52 +1,65 @@
 package db
 
 import (
-	"database/sql"
-	"fmt"
-	"log"
-
-	"github.com/go-gorp/gorp"
-	_ "github.com/lib/pq" //import postgres
-	"github.com/restsec/api-echo/config"
+	"github.com/auyer/ampdb-api/config"
+	r "gopkg.in/gorethink/gorethink.v4"
 )
 
-//DB ...
-type DB struct {
-	*sql.DB
+// AMP structure is used to store data used by this API
+type AMP struct {
+	ID                   string `gorethink:"id"`
+	Species              string `gorethink:"species"`
+	Title                string `gorethink:"title"`
+	Header               string `gorethink:"header"`
+	HidrofobicStructures []struct {
+		AvgHfobicity   string   `gorethink:"avgHfobicity"`
+		Charge         string   `gorethink:"charge"`
+		CrgNat         string   `gorethink:"crgNat"`
+		DipNat         string   `gorethink:"dipNat"`
+		DipoleMomentum string   `gorethink:"dipoleMomentum"`
+		HfobicSequence string   `gorethink:"hfobicSequence"`
+		OcArea         []string `gorethink:"ocArea"`
+		SubID          string   `gorethink:"sub_id"`
+	} `gorethink:"hidrofobicStructures"`
 }
 
-var db *gorp.DbMap
-
-//Init ...
-func Init() {
-
-	dbinfo := fmt.Sprintf("host= %s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		config.ConfigParams.DbHost, config.ConfigParams.DbPort, config.ConfigParams.DbUser,
-		config.ConfigParams.DbPassword, config.ConfigParams.DbName)
-
-	var err error
-	db, err = ConnectDB(dbinfo)
+func InsertAMP(doc AMP) (int, error) {
+	_, err := r.DB(config.ConfigParams.DbName).Table("amp").Insert(doc).Run(db)
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
-
+	// result.All()
+	return 1, nil
 }
 
-//ConnectDB ...
-func ConnectDB(dataSourceName string) (*gorp.DbMap, error) {
-	db, err := sql.Open("postgres", dataSourceName)
+func GetAMP(id string) ([]AMP, error) {
+	res, err := r.DB(config.ConfigParams.DbName).Table("amp").Get(id).Run(db)
+	defer res.Close()
+	var a []AMP
 	if err != nil {
-		return nil, err
+		// log.Output(err)
+		return a, err
 	}
-	if err = db.Ping(); err != nil {
-		return nil, err
+	err = res.All(&a)
+	if err != nil {
+		return a, err
+		// log.Output(err)
 	}
-	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
-	dbmap.TraceOn("[DB-GIN]", log.New(config.LogFile, "golang-GIN:", log.Lmicroseconds)) //Trace database requests
-	return dbmap, nil
+	return a, nil
 }
 
-//GetDB ...
-func GetDB() *gorp.DbMap {
-	return db
+func GetAMPs() ([]AMP, error) {
+	res, err := r.DB(config.ConfigParams.DbName).Table("amp").Run(db)
+	defer res.Close()
+	var a []AMP
+	if err != nil {
+		// log.Output(err)
+		return a, err
+	}
+	err = res.All(&a)
+	if err != nil {
+		return a, err
+		// log.Output(err)
+	}
+	return a, nil
 }
