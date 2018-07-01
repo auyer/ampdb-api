@@ -85,3 +85,18 @@ func (AmpController) GetAMPs(c echo.Context) error {
 	}
 	return c.JSON(200, amps)
 }
+
+func (AmpController) GetAMPIDs(c echo.Context) error {
+	amps, err := db.GetAMPs()
+	var idlist []string
+	for _, value := range amps {
+		idlist = append(idlist, value.ID)
+	}
+	if err != nil {
+		log.Println(err)
+		return c.JSON(400, ErrorBody{
+			Reason: err.Error(),
+		})
+	}
+	return c.JSON(200, idlist)
+}

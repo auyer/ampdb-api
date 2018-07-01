@@ -63,3 +63,19 @@ func GetAMPs() ([]AMP, error) {
 	}
 	return a, nil
 }
+
+func GetAMPIDs() ([]AMP, error) {
+	res, err := r.DB(config.ConfigParams.DbName).Table("amp").Pluck("id").Run(db)
+	defer res.Close()
+	var a []AMP
+	if err != nil {
+		// log.Output(err)
+		return a, err
+	}
+	err = res.All(&a)
+	if err != nil {
+		return a, err
+		// log.Output(err)
+	}
+	return a, nil
+}
