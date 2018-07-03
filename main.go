@@ -13,33 +13,32 @@ import (
 
 func main() {
 	fmt.Println("Starting Echo API")
-	err := config.ReadConfig()
+	err := config.ReadConfig() // Reads configuration File
 	if err != nil {
 		fmt.Print("Error reading configuration file")
 		log.Print(err.Error())
 		return
 	}
 
-	//log.SetOutput(config.LogFile)
 	if config.ConfigParams.Debug != "true" {
 	}
 	// BEGIN HTTPS
-	db.Init()
+	db.Init() // Opens database Connection
 	defer db.Close()
-	httpsRouter := echo.New()
+	router := echo.New() // Initializes Router
 
-	httpsRouter.Use(middleware.Logger())
-	httpsRouter.Use(middleware.Recover())
+	router.Use(middleware.Logger())
+	router.Use(middleware.Recover())
 
 	controller := new(controllers.AmpController) //Controller instance
 
-	httpsRouter.GET("/api/amp/", controller.GetAMPs)       //Simple route
-	httpsRouter.GET("/api/amp/:id", controller.GetAmpByID) //Route with URL parameter
-	// httpsRouter.GET("/api/amp/do/", controller.GetAMPFile) //Route with URL parameter
-	httpsRouter.GET("/api/amp/id/", controller.GetAMPIDs) //Route with URL parameter
+	router.GET("/api/amp/", controller.GetAMPs)       // Get all AMPS
+	router.GET("/api/amp/id/", controller.GetAMPIDs)  // Get all the IDs
+	router.GET("/api/amp/:id", controller.GetAmpByID) // Get the AMP with matching ID
+	// router.GET("/api/amp/do/", controller.GetAMPFile) // Administration Route, used only to load the first data into the Database
 
-	err = httpsRouter.Start(":" + config.ConfigParams.HttpPort) // (":"+config.ConfigParams.HttpsPort, config.ConfigParams.TLSCertLocation, config.ConfigParams.TLSKeyLocation) // listen and serve on 0.0.0.0:8080
-	// err = httpsRouter.StartTLS(":"+config.ConfigParams.HttpsPort, config.ConfigParams.TLSCertLocation, config.ConfigParams.TLSKeyLocation) // listen and serve on 0.0.0.0:8080
+	err = router.Start(":" + config.ConfigParams.HttpPort) // (":"+config.ConfigParams.HttpsPort, config.ConfigParams.TLSCertLocation, config.ConfigParams.TLSKeyLocation) // listen and serve on 0.0.0.0:8080
+	// err = router.StartTLS(":"+config.ConfigParams.HttpsPort, config.ConfigParams.TLSCertLocation, config.ConfigParams.TLSKeyLocation) // listen and serve on 0.0.0.0:8080
 	if err != nil {
 		fmt.Println(err.Error())
 		log.Fatal(err)

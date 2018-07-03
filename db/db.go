@@ -23,15 +23,7 @@ type AMP struct {
 	} `gorethink:"hidrofobicStructures"`
 }
 
-func InsertAMP(doc AMP) (int, error) {
-	_, err := r.DB(config.ConfigParams.DbName).Table("amp").Insert(doc).Run(db)
-	if err != nil {
-		return 0, err
-	}
-	// result.All()
-	return 1, nil
-}
-
+// GetAMP Makes the Querry for a specific AMP
 func GetAMP(id string) ([]AMP, error) {
 	res, err := r.DB(config.ConfigParams.DbName).Table("amp").Get(id).Run(db)
 	defer res.Close()
@@ -48,6 +40,7 @@ func GetAMP(id string) ([]AMP, error) {
 	return a, nil
 }
 
+// GetAMPs Makes the Querry for all AMPs
 func GetAMPs() ([]AMP, error) {
 	res, err := r.DB(config.ConfigParams.DbName).Table("amp").Run(db)
 	defer res.Close()
@@ -64,6 +57,7 @@ func GetAMPs() ([]AMP, error) {
 	return a, nil
 }
 
+// GetAMPIDs Makes the Querry for all IDs
 func GetAMPIDs() ([]AMP, error) {
 	res, err := r.DB(config.ConfigParams.DbName).Table("amp").Pluck("id").Run(db)
 	defer res.Close()
@@ -78,4 +72,14 @@ func GetAMPIDs() ([]AMP, error) {
 		// log.Output(err)
 	}
 	return a, nil
+}
+
+// InsertAMP is a sime inserting handler. This should be used only for testing.
+func InsertAMP(doc AMP) (int, error) {
+	_, err := r.DB(config.ConfigParams.DbName).Table("amp").Insert(doc).Run(db)
+	if err != nil {
+		return 0, err
+	}
+	// result.All()
+	return 1, nil
 }
