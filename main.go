@@ -1,44 +1,54 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/auyer/ampdb-api/config"
 	"github.com/auyer/ampdb-api/controllers"
 	"github.com/auyer/ampdb-api/db"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	fmt.Println("Starting Echo API")
-	err := config.ReadConfig() // Reads configuration File
+	longConfigFile := flag.String("config", "", "Use to indicate the configuration file location")
+	shortConfigFile := flag.String("c", "", "Use to indicate the configuration file location")
+	flag.Parse()
+	var conf config.ConfigurationStruct
+	var err error
+	if *longConfigFile != "" || *shortConfigFile != "" {
+		conf, err = config.ReadFromFile(*longConfigFile + *shortConfigFile)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+	} else {
+		conf = config.ReadFromEnv()
+	}
+
+	fmt.Println("Starting GORILLA MUX API")
+
+	log.SetOutput(conf.LogFile)
+	dbPointer, err := db.ConnectDB(conf.DBAddress)
 	if err != nil {
-		fmt.Print("Error reading configuration file")
 		log.Print(err.Error())
 		return
 	}
+	defer dbPointer.Close()
+	router := mux.NewRouter() // Initializes Router
 
-	if config.ConfigParams.Debug != "true" {
-	}
-	// BEGIN HTTPS
-	db.Init() // Opens database Connection
-	defer db.Close()
-	router := echo.New() // Initializes Router
+	controller := &controllers.AmpController{DB: dbPointer, DBName: conf.DBName}
+	// controller := new(controllers.AmpController)
+	// controller.DB = DB //Controller instance
 
-	router.Use(middleware.Logger())
-	router.Use(middleware.Recover())
+	router.HandleFunc("/api/amp/", controller.GetAMPs).Methods("GET")       // Get all AMPS
+	router.HandleFunc("/api/amp/id/", controller.GetAMPIDs).Methods("POST") // Get all the IDs
+	router.HandleFunc("/api/amp/:id", controller.GetAmpByID).Methods("GET") // Get the AMP with matching ID
+	// router.HandleFunc("/api/amp/do/", controllers.GetAMPFile()).Methods("GET") // Administration Route, used only to load the first data into the Database
 
-	controller := new(controllers.AmpController) //Controller instance
-
-	router.GET("/api/amp/", controller.GetAMPs)       // Get all AMPS
-	router.GET("/api/amp/id/", controller.GetAMPIDs)  // Get all the IDs
-	router.GET("/api/amp/:id", controller.GetAmpByID) // Get the AMP with matching ID
-	// router.GET("/api/amp/do/", controller.GetAMPFile) // Administration Route, used only to load the first data into the Database
-
-	err = router.Start(":" + config.ConfigParams.HttpPort) // (":"+config.ConfigParams.HttpsPort, config.ConfigParams.TLSCertLocation, config.ConfigParams.TLSKeyLocation) // listen and serve on 0.0.0.0:8080
-	// err = router.StartTLS(":"+config.ConfigParams.HttpsPort, config.ConfigParams.TLSCertLocation, config.ConfigParams.TLSKeyLocation) // listen and serve on 0.0.0.0:8080
+	err = http.ListenAndServe(":"+conf.HTTPPort, router)
 	if err != nil {
 		fmt.Println(err.Error())
 		log.Fatal(err)

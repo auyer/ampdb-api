@@ -1,43 +1,19 @@
 package db
 
 import (
-	"log"
-
-	"github.com/auyer/ampdb-api/config"
-	r "gopkg.in/gorethink/gorethink.v4"
+	r "gopkg.in/rethinkdb/rethinkdb-go.v5"
 )
 
-//DB ...
-// type DB struct {
-// 	db *r.Session
-// }
+// Pointer ...
+type Pointer *r.Session
 
-var db *r.Session
-
-//Init ...
-func Init() {
-
-	connectDB(r.ConnectOpts{
-		Address: config.ConfigParams.DbHost,
+// ConnectDB ...
+func ConnectDB(address string) (*r.Session, error) {
+	db, err := r.Connect(r.ConnectOpts{
+		Address: address,
 	})
-
-}
-func Close() {
-	db.Close()
-}
-
-//ConnectDB ...
-
-func connectDB(opts r.ConnectOpts) {
-	var err error
-
-	db, err = r.Connect(opts)
 	if err != nil {
-		log.Fatalln(err.Error())
+		return nil, err
 	}
-}
-
-//GetDB ...
-func GetDB() *r.Session {
-	return db
+	return db, nil
 }
